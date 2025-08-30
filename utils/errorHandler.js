@@ -42,6 +42,46 @@ const schemeBaseAgente = z.object({
     }).min(1, "O campo 'cargo' não pode ser vazio")
 }, {error: "Atributo desconhecido"})
 
+const SchemeBaseUsuarioLogin = z.object({
+    id: z.undefined({
+        error: "Campo 'id' não pode ser alterado"
+    }),
+    email: z.string({
+        error: (campo) => campo.input === undefined ? "A requisição deve possuir o campo 'email'" : "A requisição deve possuir o campo 'email' válido (string)"
+    }).regex(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, {
+        error: "O campo 'email' deve ser um email válido"
+    }),
+    senha: z.string({
+        error: (campo) => campo.input === undefined ? "A requisição deve possuir o campo 'senha'" : "A requisição deve possuir o campo 'senha' válido (string)"
+    }).min(8, {error: "O campo 'senha' deve ter pelo menos 8 caracteres"})
+    .regex(/[a-z]/, {error: "A senha deve conter pelo menos uma letra minúscula"})
+    .regex(/[A-Z]/, {error: "A senha deve conter pelo menos uma letra maiúscula"})
+    .regex(/[0-9]/, {error: "A senha deve conter pelo menos um número"})
+    .regex(/[^A-Za-z0-9]/, {error: "A senha deve conter pelo menos um caractere especial"})
+});
+
+const SchemeBaseUsuarioCadastro = z.object({
+    id: z.undefined({
+        error: "Campo 'id' não pode ser alterado"
+    }),
+    nome: z.string({
+        error: (campo) => campo.input === undefined ? "A requisição deve possuir o campo 'nome'" : "A requisição deve possuir o campo 'nome' válido (string)"
+    }).min(1, "O campo 'nome' não pode ser vazio"),
+    email: z.string({
+        error: (campo) => campo.input === undefined ? "A requisição deve possuir o campo 'email'" : "A requisição deve possuir o campo 'email' válido (string)"
+    }).regex(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, {
+        error: "O campo 'email' deve ser um email válido"
+    }),
+    senha: z.string({
+        error: (campo) => campo.input === undefined ? "A requisição deve possuir o campo 'senha'" : "A requisição deve possuir o campo 'senha' válido (string)"
+    }).min(8, {error: "O campo 'senha' deve ter pelo menos 8 caracteres"})
+    .regex(/[a-z]/, {error: "A senha deve conter pelo menos uma letra minúscula"})
+    .regex(/[A-Z]/, {error: "A senha deve conter pelo menos uma letra maiúscula"})
+    .regex(/[0-9]/, {error: "A senha deve conter pelo menos um número"})
+    .regex(/[^A-Za-z0-9]/, {error: "A senha deve conter pelo menos um caractere especial"})
+});
+
+
 const schemeBaseId = z.intersection(z.string({error: "O id deve ser de um tipo válido (string)"}), z.uuidv4({error: "O id deve possuir formato valido (uuid)"}));
 
 function validarScheme(scheme, itemValidar){

@@ -93,9 +93,57 @@ function validateCasoPartialBody(req, res, next){
     }
 }
 
+function validateUsuarioCadastroBody(req, res, next){
+    const validateObj = req.body;
+    let result = errorHandler.SchemeBaseUsuarioCadastro.strict().safeParse(validateObj);
+    let errors = [];
+    if(!result.success){
+        result = z.treeifyError(result.error);
+        if(result.properties){
+            Object.entries(result.properties).forEach(([chave, valor]) => {
+                errors.push(Object.fromEntries([[chave, valor.errors[0]]])); 
+            });
+        } else {
+            errors = [{chave_invalida: result.errors[0]}]
+        }
+        return res.status(400).json({
+            status: 400,
+            message: "Parâmetros inválidos",
+            errors: errors
+        })
+    }else{
+        return next();
+    }
+}
+
+function validateUsuarioLoginBody(req, res, next){
+    const validateObj = req.body;
+    let result = errorHandler.SchemeBaseUsuarioLogin.strict().safeParse(validateObj);
+    let errors = [];
+    if(!result.success){
+        result = z.treeifyError(result.error);
+        if(result.properties){
+            Object.entries(result.properties).forEach(([chave, valor]) => {
+                errors.push(Object.fromEntries([[chave, valor.errors[0]]])); 
+            });
+        } else {
+            errors = [{chave_invalida: result.errors[0]}]
+        }
+        return res.status(400).json({
+            status: 400,
+            message: "Parâmetros inválidos",
+            errors: errors
+        })
+    }else{
+        return next();
+    }
+}
+
 module.exports={
     validateAgenteFullBody,
     validateAgentePartialBody,
     validateCasoFullBody,
-    validateCasoPartialBody
+    validateCasoPartialBody,
+    validateUsuarioCadastroBody,
+    validateUsuarioLoginBody
 }

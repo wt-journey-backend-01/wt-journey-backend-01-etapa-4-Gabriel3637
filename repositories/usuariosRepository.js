@@ -1,16 +1,31 @@
 const db = require('../db/db');
 
-async function read(id = null) {
+async function read() {
     try{
-        let resp;
-        if(id) {
-            resp = await db('usuarios').where({ id });
-            let isSingular = Array.isArray(resp) && resp.length === 1;
-            return isSingular ? resp[0] : null;
-        } else {
-            let resp = await db('usuarios').select('*');
-            return resp;
-        }
+        let resp = await db('usuarios').select('*');
+        return resp;
+    } catch(err) {
+        console.log(err);
+        return false;
+    }
+}
+
+async function findId(id) {
+    try {
+        let resp = await db('usuarios').where({ id: id });
+        let isSingular = Array.isArray(resp) && resp.length === 1;
+        return isSingular ? resp[0] : null;
+    } catch(err) {
+        console.log(err);
+        return false;
+    }
+}
+
+async function findEmail(email) {
+    try {
+        let resp = await db('usuarios').where({ email: email });
+        let isSingular = Array.isArray(resp) && resp.length === 1;
+        return isSingular ? resp[0] : null;
     } catch(err) {
         console.log(err);
         return false;
@@ -23,6 +38,9 @@ async function create(usuario) {
         return resp[0];
     }catch(err){
         console.log(err);
+        if(err.code === '23505'){
+            return {code: err.code};
+        }
         return false;
     }
 }
@@ -37,6 +55,9 @@ async function update(id, usuario) {
         }
     }catch(err){
         console.log(err);
+        if(err.code === '23505'){
+            return {code: err.code};
+        }
         return false;
     }
 }
