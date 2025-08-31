@@ -55,7 +55,7 @@ async function create(caso){
         return result[0];
     }catch(err){
         console.log(err);
-        if(err.code = "23503"){
+        if(err.code === "23503"){
             return {code: err.code}
         }else {
             return false;
@@ -83,7 +83,7 @@ async function update(id, objUpdate) {
         }
     } catch (err) {
         console.log(err);
-        if(err.code = "23503"){
+        if(err.code === "23503"){
             return {code: err.code}
         }else {
             return false;

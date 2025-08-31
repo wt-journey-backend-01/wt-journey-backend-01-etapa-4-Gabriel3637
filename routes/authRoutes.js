@@ -225,7 +225,7 @@ routerUsuario.post('/login', validates.validateUsuarioLoginBody, authController.
 
 /**
  * @openapi
- * /auth/remove/{id}:
+ * /users/{id}:
  *   delete:
  *     summary: Remover usuário
  *     description: Remove um usuário existente

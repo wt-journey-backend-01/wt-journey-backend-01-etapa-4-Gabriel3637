@@ -53,7 +53,7 @@ async function login(req, res) {
             return res.status(200).json({
                 status: 200,
                 message: "Login realizado com sucesso",
-                acess_token: token
+                access_token: token
             });
         }
         
