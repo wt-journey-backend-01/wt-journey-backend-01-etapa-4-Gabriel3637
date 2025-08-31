@@ -1,7 +1,7 @@
 const usuariosRepository = require('../repositories/usuariosRepository');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { stack } = require('../docs/swagger');
+require('dotenv').config();
 
 const error404Body = {
     status: 404,
@@ -35,7 +35,7 @@ async function login(req, res) {
         if(resultado == null){
             return res.status(404).json(error404Body);
         }else if(resultado === false){
-            return res.status(501).send("Erro ao buscar usuário");
+            return res.status(500).send();
         } else {
             const senhaValida = await bcrypt.compare(senha, resultado.senha);
             if(!senhaValida){
@@ -43,7 +43,7 @@ async function login(req, res) {
             }
             console.log(process.env.JWT_SECRET);
             const token = jwt.sign({ id: resultado.id, email: resultado.email, nome: resultado.nome }, process.env.JWT_SECRET, { expiresIn: '1d' });
-            res.cookie("token", token, {
+            res.cookie("token", token, { 
                 httpOnly: true,
                 secure: process.env.NODE_ENV === "production",
                 sameSite: "lax",
@@ -58,8 +58,7 @@ async function login(req, res) {
         }
         
     }catch(err){
-        console.log(err);
-        return res.status(500).json({name: err.name, message: err.message, stack: err.stack});
+        return res.status(500).send();
     }
 }
 
