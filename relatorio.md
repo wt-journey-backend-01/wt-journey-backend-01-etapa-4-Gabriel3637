@@ -1,6 +1,6 @@
 <sup>Esse é um feedback gerado por IA, ele pode conter erros.</sup>
 
-Você tem 7 créditos restantes para usar o sistema de feedback AI.
+Você tem 6 créditos restantes para usar o sistema de feedback AI.
 
 # Feedback para Gabriel3637:
 
@@ -8,101 +8,134 @@ Nota final: **50.5/100**
 
 Olá, Gabriel3637! 👋🚀
 
-Primeiramente, parabéns pelo esforço e dedicação até aqui! Você conseguiu implementar a parte de usuários, com registro, login, logout e exclusão funcionando, além de garantir validações importantes para os campos de cadastro — isso é ótimo e mostra que você está no caminho certo! 🎉 Também aplicou o middleware de autenticação para proteger rotas, o que é fundamental para a segurança da aplicação. 
-
-Além disso, você já avançou em alguns bônus, como a filtragem por status, busca por agente responsável, busca por palavras-chave, e o endpoint para buscar casos de um agente. Isso é muito legal, pois demonstra que você está explorando além do básico! 👏
+Primeiramente, parabéns pelo esforço e dedicação em construir essa API para o Departamento de Polícia! 🎉 Você conseguiu implementar toda a parte de usuários, incluindo registro, login, logout e exclusão, com validações detalhadas para senha, email e nome. Isso é um baita avanço e demonstra que você compreendeu muito bem os conceitos de autenticação e segurança com JWT e bcrypt. Além disso, você aplicou o middleware de autenticação para proteger as rotas de agentes e casos, o que é essencial para a segurança da aplicação. Muito bom! 👏👏
 
 ---
 
-### Vamos agora entender os pontos que precisam de atenção para destravar os testes que falharam e elevar sua nota!
+## 🎯 Bônus conquistados e pontos fortes
+
+- Implementou corretamente a criação, login, logout e exclusão de usuários com JWT e bcrypt.
+- Aplicou middleware de autenticação para proteger rotas sensíveis.
+- Validou campos de usuário com regras rigorosas (senha, email, nome).
+- Organização geral do projeto está muito próxima da estrutura esperada, com controllers, repositories, middlewares, rotas e db bem divididos.
+- Documentação Swagger está presente e detalhada nas rotas principais.
+- Tratamento de erros customizados para usuários, agentes e casos.
+- Passou vários testes básicos e de segurança, o que mostra que a base está sólida.
 
 ---
 
-## 1. Estrutura de Diretórios
+## 🚩 Análise dos testes que falharam e causas-raiz
 
-Sua estrutura está muito próxima do esperado, o que é ótimo! Porém, reparei que no arquivo `routes/authRoutes.js`, você exporta o router como:
+### 1. Testes relacionados a agentes e casos falharam (exemplos: criação, listagem, busca, atualização, deleção)
 
-```js
-const routerUsuario = express.Router();
-// ...
-module.exports = routerUsuario;
-```
+**Problema principal detectado:**  
+Apesar de o middleware de autenticação estar aplicado corretamente nas rotas de agentes e casos, e o código dos controllers e repositories parecer coerente, os testes indicam que as operações CRUD de agentes e casos estão falhando, incluindo erros de status 400, 404 e 401.
 
-Mas no `server.js`, você importa como:
+**Possíveis causas-raiz:**
 
-```js
-const authRouter = require("./routes/authRoutes.js");
-```
+- **Validação dos IDs dos agentes e casos usando `BigInt`:**  
+  No `agentesController.js` e `casosController.js`, você converte IDs para `BigInt` para validar, como aqui:
 
-E usa assim:
+  ```js
+  function toBigInt(valor, res){
+      try{
+          return BigInt(valor);
+      }catch(err){
+          return false;
+      }
+  }
+  ```
 
-```js
-app.use("/auth", authRouter);
-```
+  Porém, na migration, as tabelas `agentes`, `casos` e `usuarios` usam `increments` para o campo `id`, que é um `integer` no PostgreSQL, não `bigint` ou `string UUID`. Isso gera um conflito: você tenta converter um `id` que é um número normal para `BigInt`, mas na prática o `id` é um número simples (integer) e pode ser passado como string no parâmetro.
 
-Está correto, só fique atento para manter o padrão de nomes (usar `authRouter` para rotas de autenticação) para facilitar a manutenção e leitura do código.
+  Além disso, o uso de `BigInt` para validar o ID pode causar problemas porque o parâmetro vem como string na URL e o teste espera que IDs inválidos retornem 404, mas o método pode falhar ou não interpretar corretamente o ID.
 
-Outro ponto importante: o arquivo `INSTRUCTIONS.md` está vazio. A documentação do processo de autenticação e uso do JWT é um requisito obrigatório para a entrega e para a nota final. Não deixe de preencher, explicando como registrar, logar, enviar o token no header e o fluxo esperado. Isso ajuda demais quem for usar sua API.
+- **Uso inconsistente de tipos de ID:**  
+  Nas migrations, a tabela `usuarios` tem `id` como `increments` (integer). No seu JWT, você inclui o `id` e o `email`, mas no middleware e no controller você espera IDs numéricos. Porém, em algumas partes do código, especialmente no `authRoutes.js`, a rota de exclusão de usuário é `/users/:id` (no `server.js`), mas no `authRoutes.js` você declarou um endpoint DELETE `/auth/remove/:id`, que não está sendo usado no `server.js`.
+
+  Isso pode causar confusão de rotas e falha nos testes que esperam a exclusão via `/auth/remove/:id`.
+
+- **Status code e respostas inconsistentes:**  
+  No `authController.js`, no método `login`, você retorna o token com a chave `acess_token` (note o "s" faltando em "access"):
+
+  ```js
+  return res.status(200).json({
+      status: 200,
+      message: "Login realizado com sucesso",
+      acess_token: token
+  });
+  ```
+
+  Mas o requisito e o teste esperam o campo `access_token`, com dois "c". Isso pode estar causando falha nos testes de login.
+
+- **Tratamento incorreto de erros de banco de dados:**  
+  No `casosRepository.js`, no `catch` do `create` e `update`, você tem:
+
+  ```js
+  if(err.code = "23503"){
+      return {code: err.code}
+  }
+  ```
+
+  Aqui você usou um único `=` (atribuição) em vez de `===` (comparação). Isso faz com que o erro sempre entre nesse bloco e retorne `{code: err.code}`, mesmo para outros erros, podendo mascarar erros reais.
+
+- **Middleware de autenticação e rota DELETE de usuário:**  
+  No `server.js`, a rota para deletar usuário é:
+
+  ```js
+  app.delete("/users/:id", authMiddleware, authController.removerUsuario);
+  ```
+
+  Mas no `authRoutes.js` você tem a rota:
+
+  ```js
+  routerUsuario.delete('/auth/remove/:id', ...);
+  ```
+
+  A rota declarada no `server.js` não está usando o router `authRouter`, e sim está definida diretamente. Isso pode causar inconsistência e falha nos testes que esperam a rota `/auth/remove/:id`.
+
+- **Arquivo `INSTRUCTIONS.md` vazio:**  
+  O requisito pede para documentar no `INSTRUCTIONS.md` como registrar e logar usuários, enviar token JWT, e fluxo de autenticação. Este arquivo está vazio, o que pode impactar a nota final.
 
 ---
 
-## 2. Análise dos Testes que Falharam
+## ✍️ Recomendações e correções práticas
 
-Você teve falhas em todos os testes base relacionados aos **agentes** e **casos** — criação, listagem, busca por ID, atualização (PUT e PATCH), exclusão, e erros para payload inválido ou IDs inválidos. Isso indica um problema fundamental na manipulação dessas entidades.
+### Corrigir o campo `access_token` no login
 
-### Motivo raiz provável: IDs dos agentes e casos tratados como `BigInt`, mas as migrations criam IDs como `increments` (inteiros normais).
-
-Vamos analisar o que está acontecendo:
-
-- Nas migrations (`db/migrations/20250810170222_create_agentes.js` e `20250810171959_create_casos.js`), você usa:
+No seu `authController.js`, ajuste o retorno do login para usar o nome correto da propriedade:
 
 ```js
-table.increments('id').primary();
+return res.status(200).json({
+    status: 200,
+    message: "Login realizado com sucesso",
+    access_token: token // Corrigido o nome da chave
+});
 ```
 
-Isso cria IDs do tipo **inteiro (integer)**, não UUID nem BigInt.
+Isso é fundamental para passar os testes que validam o formato da resposta.
 
-- No `controllers/agentesController.js` e `casosController.js`, você converte os IDs recebidos da URL para `BigInt`:
+---
+
+### Ajustar validação e uso dos IDs
+
+Como você usa `increments` (integers) nas migrations, não é necessário converter para `BigInt`.
+
+Sugestão:
+
+- Remova o uso de `BigInt` para validar os IDs.
+- Em vez disso, use uma validação simples para verificar se o parâmetro é um número inteiro positivo.
+
+Exemplo de função para validar ID numérico:
 
 ```js
-function toBigInt(valor){
-    try{
-        return BigInt(valor);
-    }catch(err){
-        return false;
-    }
+function isValidId(id) {
+  const n = Number(id);
+  return Number.isInteger(n) && n > 0;
 }
 ```
 
-E usa isso para buscar no banco:
-
-```js
-let idAgente = toBigInt(req.params.id);
-```
-
-O problema é que o Knex e o PostgreSQL esperam um inteiro normal para essas colunas, e você está passando um `BigInt`. Isso pode causar falha na query, retornando `false` ou `null`, e consequentemente os testes falham.
-
-Além disso, os IDs são números inteiros simples, não UUIDs, então o uso de `BigInt` não é necessário aqui.
-
-**Solução:** Troque a conversão para `BigInt` por `parseInt` ou simplesmente valide se o ID é um número inteiro válido. Por exemplo:
-
-```js
-function toInt(valor) {
-    const parsed = parseInt(valor, 10);
-    if (isNaN(parsed)) {
-        return false;
-    }
-    return parsed;
-}
-```
-
-E use isso para validar IDs. Isso vai alinhar o tipo esperado pela query e evitar erros.
-
----
-
-### Exemplo de ajuste no agentesController.js:
-
-Antes:
+E no controller, substitua:
 
 ```js
 let idAgente = toBigInt(req.params.id);
@@ -111,62 +144,22 @@ if(!idAgente){
 }
 ```
 
-Depois:
+por
 
 ```js
-function toInt(valor) {
-    const parsed = parseInt(valor, 10);
-    if (isNaN(parsed)) return false;
-    return parsed;
-}
-
-let idAgente = toInt(req.params.id);
-if(idAgente === false){
+if (!isValidId(req.params.id)) {
     return res.status(404).json(error404Body);
 }
+const idAgente = Number(req.params.id);
 ```
 
-Faça o mesmo para casosController.js.
+Isso evita erros na conversão e torna o código mais robusto e alinhado com o banco.
 
 ---
 
-## 3. Tratamento correto de erros e status codes
+### Corrigir comparação no tratamento de erro no `casosRepository.js`
 
-Notei que em `controllers/authController.js`, no login, você retorna o token no JSON assim:
-
-```js
-return res.status(200).json({
-    status: 200,
-    message: "Login realizado com sucesso",
-    acess_token: token
-});
-```
-
-O correto, conforme o enunciado, é a chave `access_token` (com dois "c"), não `acess_token`. Esse detalhe pode fazer o teste falhar.
-
-Corrija para:
-
-```js
-return res.status(200).json({
-    access_token: token
-});
-```
-
-Sem os campos `status` e `message` no corpo da resposta do login, pois o teste espera exatamente esse formato.
-
----
-
-## 4. Outros detalhes importantes
-
-- Na `repositories/casosRepository.js`, dentro do catch de `create` e `update`, você tem:
-
-```js
-if(err.code = "23503"){
-    return {code: err.code}
-}
-```
-
-Note que está usando **atribuição** `=` em vez de comparação `===`. Isso faz sempre entrar nessa condição. Corrija para:
+Altere as linhas com erro de atribuição para comparação correta:
 
 ```js
 if(err.code === "23503"){
@@ -174,61 +167,129 @@ if(err.code === "23503"){
 }
 ```
 
-Esse erro pode causar comportamentos inesperados na sua aplicação.
+Isso garante que o erro de foreign key seja tratado corretamente, e outros erros não sejam mascarados.
 
 ---
 
-## 5. Middleware de autenticação e proteção das rotas
+### Ajustar rota de exclusão de usuário para usar o router correto
 
-Você aplicou o middleware `authMiddleware` corretamente nas rotas de agentes e casos, o que é excelente! Isso garante que só usuários autenticados acessam esses recursos.
+No seu `server.js`, você tem:
 
----
+```js
+app.delete("/users/:id", authMiddleware, authController.removerUsuario);
+```
 
-## 6. Documentação no INSTRUCTIONS.md
+Mas no arquivo `routes/authRoutes.js`, a rota de exclusão é:
 
-Está vazia, e isso prejudica a entrega, pois a documentação é importante para que outros desenvolvedores saibam como usar sua API, especialmente para a parte de autenticação — registrar, login, uso do token no header Authorization, fluxo de autenticação, etc.
+```js
+routerUsuario.delete('/auth/remove/:id', authMiddleware, authController.removerUsuario);
+```
 
----
+Para manter padrão e evitar confusão, faça o seguinte:
 
-## 7. Sobre os testes bônus que falharam
+- Remova a rota `app.delete("/users/:id", ...)` do `server.js`.
+- No `authRoutes.js`, descomente ou implemente a rota DELETE `/users/:id` (sem o `/auth/remove`), ou ajuste o `server.js` para usar o router `authRouter` que já tem as rotas de autenticação.
 
-Os testes bônus que falharam estão relacionados a funcionalidades que você tentou implementar, como filtragem por data, busca de usuário autenticado em `/usuarios/me` e mensagens de erro customizadas.
+Por exemplo, no `authRoutes.js`, defina:
 
-Esses são avanços muito legais, mas o foco principal agora é corrigir os testes base que falharam para garantir a funcionalidade principal.
+```js
+routerUsuario.delete('/users/:id', authMiddleware, authController.removerUsuario);
+```
 
----
+E no `server.js`, apenas use:
 
-# Recomendações de aprendizado 📚
+```js
+app.use("/auth", authRouter);
+```
 
-- Para entender melhor a questão do tipo dos IDs e manipulação correta, recomendo fortemente revisar o vídeo do Knex Query Builder, que explica como fazer consultas corretamente e manusear tipos: https://www.youtube.com/watch?v=GLwHSs7t3Ns&t=4s
-
-- Para fortalecer seu entendimento sobre autenticação e JWT, que é crucial para proteger rotas, veja este vídeo feito pelos meus criadores que explica muito bem os conceitos básicos e a prática: https://www.youtube.com/watch?v=Q4LQOfYwujk
-
-- Para entender melhor o uso correto do bcrypt e JWT juntos, este vídeo é ótimo: https://www.youtube.com/watch?v=L04Ln97AwoY
-
-- Para garantir que seu ambiente esteja bem configurado e as migrations rodem corretamente, este vídeo sobre configuração com Docker e Knex é excelente: https://www.youtube.com/watch?v=uEABDBQV-Ek&t=1s
-
----
-
-# Resumo dos principais pontos para focar:
-
-- [ ] Trocar a conversão de IDs de `BigInt` para `parseInt` ou validação numérica simples para agentes e casos, alinhando com o tipo do banco.
-
-- [ ] Corrigir a chave do token retornado no login para `access_token` (com dois "c"), no formato esperado pelo teste.
-
-- [ ] Corrigir operadores de comparação no catch dos repositórios (usar `===` ao invés de `=`).
-
-- [ ] Preencher o arquivo `INSTRUCTIONS.md` com a documentação da autenticação e uso da API.
-
-- [ ] Revisar o tratamento de erros para garantir que status codes e mensagens estejam conforme o esperado.
-
-- [ ] Continuar aplicando o middleware de autenticação para proteger rotas sensíveis (já feito, parabéns!).
+Assim, todas as rotas de autenticação ficam centralizadas.
 
 ---
 
-Gabriel, você está muito próximo de entregar uma API segura e funcional! Corrigindo esses detalhes vai abrir caminho para passar todos os testes base e consolidar uma aplicação robusta. Continue firme, aproveite as dicas e recursos, e conte comigo para o que precisar! 💪🚀
+### Preencher o arquivo `INSTRUCTIONS.md`
 
-Boa codificação! 👨‍💻👩‍💻✨
+Esse arquivo é parte do desafio e deve conter:
+
+- Como registrar um usuário (`POST /auth/register`) com exemplo de payload.
+- Como logar (`POST /auth/login`) e receber o token JWT.
+- Como enviar o token no header `Authorization: Bearer <token>` para acessar rotas protegidas.
+- Explicação breve do fluxo de autenticação.
+
+Exemplo básico para começar:
+
+```
+# Instruções de Uso da API
+
+## Registro de Usuário
+Endpoint: POST /auth/register
+Payload:
+{
+  "nome": "Seu Nome",
+  "email": "email@exemplo.com",
+  "senha": "SenhaForte@123"
+}
+
+## Login de Usuário
+Endpoint: POST /auth/login
+Payload:
+{
+  "email": "email@exemplo.com",
+  "senha": "SenhaForte@123"
+}
+Resposta:
+{
+  "status": 200,
+  "message": "Login realizado com sucesso",
+  "access_token": "seu.token.jwt.aqui"
+}
+
+## Acesso a rotas protegidas
+Enviar no header da requisição:
+Authorization: Bearer <access_token>
+
+## Logout
+Endpoint: POST /auth/logout
+Header Authorization obrigatório
+
+```
+
+---
+
+## 🧭 Dicas gerais para seu progresso
+
+- Revise o uso dos tipos de dados para IDs, evite usar `BigInt` se o banco usa `integer`.
+- Mantenha consistência nas rotas e na nomenclatura dos endpoints.
+- Teste suas rotas com ferramentas como Postman ou Insomnia para garantir que o formato das respostas está correto.
+- Preste atenção aos detalhes da API, como nomes exatos de campos (`access_token`), status codes e mensagens.
+- Documente sempre o funcionamento da API no `INSTRUCTIONS.md`, isso ajuda a entender e usar a aplicação.
+
+---
+
+## 📚 Recursos recomendados para você
+
+- Para entender melhor como trabalhar com JWT e bcrypt, dê uma olhada neste vídeo, feito pelos meus criadores, que fala muito bem sobre autenticação e segurança: https://www.youtube.com/watch?v=Q4LQOfYwujk  
+- Para aprimorar o uso do JWT na prática, recomendo este vídeo: https://www.youtube.com/watch?v=keS0JWOypIU  
+- Para entender o funcionamento do bcrypt e JWT juntos, este vídeo é ótimo: https://www.youtube.com/watch?v=L04Ln97AwoY  
+- Para melhorar a manipulação do banco com Knex e entender migrations e seeds, veja este guia detalhado: https://www.youtube.com/watch?v=dXWy_aGCW1E  
+- Para organizar melhor seu código em MVC e entender a estrutura do projeto, este vídeo é muito útil: https://www.youtube.com/watch?v=bGN_xNc4A1k&t=3s
+
+---
+
+## 🔍 Resumo rápido dos principais pontos para focar:
+
+- Corrigir o nome do campo `access_token` no retorno do login (está como `acess_token`).
+- Ajustar validação e uso dos IDs para evitar `BigInt` e usar validação simples de números inteiros.
+- Corrigir as comparações no tratamento de erros (usar `===` em vez de `=`).
+- Unificar a rota de exclusão de usuário para usar o router correto e evitar rotas conflitantes.
+- Preencher o arquivo `INSTRUCTIONS.md` com documentação clara de registro, login, logout e uso do token JWT.
+- Testar todas as rotas protegidas com token JWT válido e inválido para garantir os status corretos.
+- Revisar o middleware de autenticação para garantir que erros de token inválido ou ausente retornem status 401.
+
+---
+
+Gabriel, você está no caminho certo! 🚀 Com esses ajustes, sua API vai ficar bem mais robusta, alinhada com os requisitos e pronta para produção. Continue praticando e aprimorando esses detalhes que fazem toda a diferença. Qualquer dúvida, estou aqui para ajudar! 💪😊
+
+Um grande abraço e bons códigos! 👨‍💻✨
 
 > Caso queira tirar uma dúvida específica, entre em contato com o Chapter no nosso [discord](https://discord.gg/DryuHVnz).
 
