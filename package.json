@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "node --watch server.js",
-    "db:reset": "docker compose down -v; docker compose up -d; sleep 3; npx knex migrate:latest; npx knex seed:run"
+    "db:reset": "docker stop postgres-database && docker rm postgres-database && docker compose down -v && docker compose up -d && sleep 3 && npx knex migrate:latest && npx knex seed:run"
   },
   "repository": {
     "type": "git",

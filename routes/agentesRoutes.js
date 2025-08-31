@@ -2,6 +2,7 @@ const express = require('express')
 const routerAgente = express.Router();
 const agentesController = require('../controllers/agentesController');
 const validates = require('../utils/validateFunctions');
+const { authMiddleware } = require('../middlewares/authMiddleware');
 
 /**
  * @openapi
@@ -76,6 +77,19 @@ const validates = require('../utils/validateFunctions');
  *           format: date
  *         cargo:
  *           type: string
+ *     AutenticacaoErro:
+ *       type: object
+ *       properties:
+ *         status:
+ *           type: integer
+ *           example: 401
+ *         message:
+ *           type: string
+ *           example: Token não fornecido
+ *         errors:
+ *           type: array
+ *           example:
+ *             - token: O token de autenticação é obrigatório
  */
 
 /**
@@ -143,8 +157,14 @@ const validates = require('../utils/validateFunctions');
  *                     nome: Ana Silva
  *                     dataDeIncorporacao: '2000-05-12'
  *                     cargo: investigador
+ *         '401':
+ *            description: Token não fornecido
+ *            content:
+ *              application/json:
+ *                schema:
+ *                  $ref: '#/components/schemas/AutenticacaoErro'
  */
-routerAgente.get('/', agentesController.getAllAgentes);
+routerAgente.get('/', authMiddleware, agentesController.getAllAgentes);
 
 /**
  * @openapi
@@ -174,8 +194,14 @@ routerAgente.get('/', agentesController.getAllAgentes);
  *             application/json:
  *               schema:
  *                 $ref: '#/components/schemas/AgenteInexistenteErro'
+ *         '401':
+ *            description: Token não fornecido
+ *            content:
+ *              application/json:
+ *                schema:
+ *                  $ref: '#/components/schemas/AutenticacaoErro'
  */
-routerAgente.get('/:id', agentesController.getAgente);
+routerAgente.get('/:id', authMiddleware, agentesController.getAgente);
 
 /**
  * @openapi
@@ -207,8 +233,14 @@ routerAgente.get('/:id', agentesController.getAgente);
  *                 application/json:
  *                   schema:
  *                     $ref: '#/components/schemas/AgenteErroParametros'
+ *             '401':
+ *                description: Token não fornecido
+ *                content:
+ *                  application/json:
+ *                    schema:
+ *                      $ref: '#/components/schemas/AutenticacaoErro'
  */
-routerAgente.post('/', validates.validateAgenteFullBody, agentesController.postAgente);
+routerAgente.post('/', authMiddleware, validates.validateAgenteFullBody, agentesController.postAgente);
 
 /**
  * @openapi
@@ -255,8 +287,14 @@ routerAgente.post('/', validates.validateAgenteFullBody, agentesController.postA
  *                 application/json:
  *                   schema:
  *                     $ref: '#/components/schemas/AgenteInexistenteErro'
+ *             '401':
+ *                description: Token não fornecido
+ *                content:
+ *                  application/json:
+ *                    schema:
+ *                      $ref: '#/components/schemas/AutenticacaoErro'
  */
-routerAgente.put('/:id', validates.validateAgenteFullBody, agentesController.putAgente);
+routerAgente.put('/:id', authMiddleware, validates.validateAgenteFullBody, agentesController.putAgente);
 
 /**
  * @openapi
@@ -299,8 +337,14 @@ routerAgente.put('/:id', validates.validateAgenteFullBody, agentesController.put
  *             application/json:
  *               schema:
  *                 $ref: '#/components/schemas/AgenteInexistenteErro'
+ *         '401':
+ *            description: Token não fornecido
+ *            content:
+ *              application/json:
+ *                schema:
+ *                  $ref: '#/components/schemas/AutenticacaoErro'
  */
-routerAgente.patch('/:id', validates.validateAgentePartialBody, agentesController.patchAgente);
+routerAgente.patch('/:id', authMiddleware, validates.validateAgentePartialBody, agentesController.patchAgente);
 /**
  * @openapi
  * /agentes/{id}:
@@ -325,9 +369,15 @@ routerAgente.patch('/:id', validates.validateAgentePartialBody, agentesControlle
  *             application/json:
  *               schema:
  *                 $ref: '#/components/schemas/AgenteInexistenteErro'
+ *         '401':
+ *            description: Token não fornecido
+ *            content:
+ *              application/json:
+ *                schema:
+ *                  $ref: '#/components/schemas/AutenticacaoErro'
  */
 
-routerAgente.delete('/:id', agentesController.deleteAgente);
+routerAgente.delete('/:id', authMiddleware, agentesController.deleteAgente);
 
 
 /**
@@ -378,7 +428,13 @@ routerAgente.delete('/:id', agentesController.deleteAgente);
  *             application/json:
  *               schema:
  *                 $ref: '#/components/schemas/AgenteInexistenteErro'
+ *         '401':
+ *            description: Token não fornecido
+ *            content:
+ *              application/json:
+ *                schema:
+ *                  $ref: '#/components/schemas/AutenticacaoErro'
  */
-routerAgente.get('/:id/casos', agentesController.getCasosAgente)
+routerAgente.get('/:id/casos', authMiddleware, agentesController.getCasosAgente)
 
 module.exports = routerAgente

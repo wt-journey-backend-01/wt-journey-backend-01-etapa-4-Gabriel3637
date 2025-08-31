@@ -2,6 +2,7 @@ const express = require('express')
 const routerCaso = express.Router();
 const casosController = require('../controllers/casosController');
 const validates = require('../utils/validateFunctions');
+const {authMiddleware} = require('../middlewares/authMiddleware.js');
 
 /**
  * @openapi
@@ -110,7 +111,19 @@ const validates = require('../utils/validateFunctions');
  *           type: array
  *           example:
  *             - querry: O parâmetro 'q' é obrigatório para pesquisa
- * 
+ *     AutenticacaoErro:
+ *       type: object
+ *       properties:
+ *         status:
+ *           type: integer
+ *           example: 401
+ *         message:
+ *           type: string
+ *           example: Token não fornecido
+ *         errors:
+ *           type: array
+ *           example:
+ *             - token: O token de autenticação é obrigatório
  */
 
 
@@ -194,8 +207,14 @@ const validates = require('../utils/validateFunctions');
  *                       às 19:15 do dia 12/08/2010.
  *                     status: solucionado
  *                     agente_id: c93dea02-c8dd-4fa6-bba5-2bc2661dbff8
+ *         '401':
+ *            description: Token não fornecido
+ *            content:
+ *              application/json:
+ *                schema:
+ *                  $ref: '#/components/schemas/AutenticacaoErro'
  */
-routerCaso.get('/', casosController.getAllCasos);
+routerCaso.get('/', authMiddleware, casosController.getAllCasos);
 
 /**
  * @openapi
@@ -243,8 +262,14 @@ routerCaso.get('/', casosController.getAllCasos);
  *             application/json:
  *               schema:
  *                 $ref: '#/components/schemas/CasoBuscarErro'
+ *         '401':
+ *            description: Token não fornecido
+ *            content:
+ *              application/json:
+ *                schema:
+ *                  $ref: '#/components/schemas/AutenticacaoErro'
  */
-routerCaso.get('/search', casosController.pesquisarCasos);
+routerCaso.get('/search', authMiddleware, casosController.pesquisarCasos);
 
 /**
  * @openapi
@@ -275,8 +300,14 @@ routerCaso.get('/search', casosController.pesquisarCasos);
  *             application/json:
  *               schema:
  *                 $ref: '#/components/schemas/CasoInexistenteErro'
+ *         '401':
+ *            description: Token não fornecido
+ *            content:
+ *              application/json:
+ *                schema:
+ *                  $ref: '#/components/schemas/AutenticacaoErro'
  */
-routerCaso.get('/:id', casosController.getCaso);
+routerCaso.get('/:id', authMiddleware, casosController.getCaso);
 
 /**
  * @openapi
@@ -315,8 +346,14 @@ routerCaso.get('/:id', casosController.getCaso);
  *             application/json:
  *               schema:
  *                 $ref: '#/components/schemas/AgenteInexistenteErro'
+ *         '401':
+ *            description: Token não fornecido
+ *            content:
+ *              application/json:
+ *                schema:
+ *                  $ref: '#/components/schemas/AutenticacaoErro'
  */
-routerCaso.post('/', validates.validateCasoFullBody, casosController.postCaso);
+routerCaso.post('/', authMiddleware, validates.validateCasoFullBody, casosController.postCaso);
 
 
 /**
@@ -366,8 +403,14 @@ routerCaso.post('/', validates.validateCasoFullBody, casosController.postCaso);
  *             application/json:
  *               schema:
  *                 $ref: '#/components/schemas/CasoInexistenteErro'
+ *         '401':
+ *            description: Token não fornecido
+ *            content:
+ *              application/json:
+ *                schema:
+ *                  $ref: '#/components/schemas/AutenticacaoErro'
  */
-routerCaso.put('/:id', validates.validateCasoFullBody, casosController.putCaso);
+routerCaso.put('/:id', authMiddleware, validates.validateCasoFullBody, casosController.putCaso);
 
 /**
  * @openapi
@@ -411,8 +454,14 @@ routerCaso.put('/:id', validates.validateCasoFullBody, casosController.putCaso);
  *             application/json:
  *               schema:
  *                 $ref: '#/components/schemas/CasoInexistenteErro'
+ *         '401':
+ *            description: Token não fornecido
+ *            content:
+ *              application/json:
+ *                schema:
+ *                  $ref: '#/components/schemas/AutenticacaoErro'
  */
-routerCaso.patch('/:id', validates.validateCasoPartialBody, casosController.patchCaso);
+routerCaso.patch('/:id', authMiddleware, validates.validateCasoPartialBody, casosController.patchCaso);
 
 /**
  * @openapi
@@ -439,8 +488,14 @@ routerCaso.patch('/:id', validates.validateCasoPartialBody, casosController.patc
  *             application/json:
  *               schema:
  *                 $ref: '#/components/schemas/CasoInexistenteErro'
+ *         '401':
+ *            description: Token não fornecido
+ *            content:
+ *              application/json:
+ *                schema:
+ *                  $ref: '#/components/schemas/AutenticacaoErro'
  */
-routerCaso.delete('/:id', casosController.deleteCaso);
+routerCaso.delete('/:id', authMiddleware, casosController.deleteCaso);
 
 /**
  * @openapi
@@ -475,7 +530,13 @@ routerCaso.delete('/:id', casosController.deleteCaso);
  *             application/json:
  *               schema:
  *                 $ref: '#/components/schemas/CasoInexistenteErro'
+ *         '401':
+ *            description: Token não fornecido
+ *            content:
+ *              application/json:
+ *                schema:
+ *                  $ref: '#/components/schemas/AutenticacaoErro'
  */
-routerCaso.get('/:caso_id/agente', casosController.getAgenteCaso);
+routerCaso.get('/:caso_id/agente', authMiddleware, casosController.getAgenteCaso);
 
 module.exports = routerCaso

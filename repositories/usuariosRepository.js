@@ -76,5 +76,7 @@ module.exports = {
     read,
     create,
     update,
-    remove
+    remove,
+    findEmail,
+    findId
 };

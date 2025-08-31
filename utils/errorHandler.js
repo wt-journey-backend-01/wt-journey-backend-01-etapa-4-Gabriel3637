@@ -130,4 +130,6 @@ module.exports = {
     validarScheme,
     validarSchemeAsync,
     schemeBaseId,
+    SchemeBaseUsuarioLogin,
+    SchemeBaseUsuarioCadastro
 }
