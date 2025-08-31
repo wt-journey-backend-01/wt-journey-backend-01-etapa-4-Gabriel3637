@@ -69,7 +69,7 @@ async function register(req, res) {
         if (usuarioExistente) {
             return res.status(400).json(error400Body);
         }
-        const salt = await bcrypt.genSalt(parseInt(process.env.BCRYPT_SALT_ROUNDS));
+        const salt = await bcrypt.genSalt(10);
         const senhaHash = await bcrypt.hash(senha, salt);
         const novoUsuario = await usuariosRepository.create({
             email,
