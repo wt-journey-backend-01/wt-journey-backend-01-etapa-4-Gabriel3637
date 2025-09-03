@@ -41,8 +41,8 @@ async function login(req, res) {
             if(!senhaValida){
                 return res.status(401).json({status: 401, message: "Senha inválida", errors: [{senha: "Senha incorreta"}]});
             }
-            console.log(process.env.JWT_SECRET);
-            const token = jwt.sign({ id: resultado.id, email: resultado.email, nome: resultado.nome }, process.env.JWT_SECRET, { expiresIn: '1d' });
+            console.log(process.env.JWT_SECRET || "segredo");
+            const token = jwt.sign({ id: resultado.id, email: resultado.email, nome: resultado.nome }, process.env.JWT_SECRET || "segredo", { expiresIn: '1d' });
             res.cookie("token", token, { 
                 httpOnly: true,
                 secure: process.env.NODE_ENV === "production",
@@ -58,6 +58,7 @@ async function login(req, res) {
         }
         
     }catch(err){
+        console.log(err);
         return res.status(500).send();
     }
 }
